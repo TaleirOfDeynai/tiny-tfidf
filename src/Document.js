@@ -4,7 +4,10 @@
 // out if they contain only 1 character or if they start with a number.
 export default class Document {
 
-  // Expects a single one of the texts originally passed into Corpus
+  /**
+   * @param {string} text
+   * Expects a single one of the texts originally passed into Corpus
+   */
   constructor(text) {
     this._text = text;
     this._words = text
@@ -19,10 +22,14 @@ export default class Document {
         }
       })
       .map(word => word.toLowerCase());
+  
+    /** @type {Map<string, number>} */
     this._termFrequencies = null;
   }
 
-  // Internal method to count how often each term appears in this document
+  /**
+   * Internal method to count how often each term appears in this document.
+   */
   _calculateTermFrequencies() {
     this._termFrequencies = new Map();
     this._words.forEach(word => {
@@ -34,7 +41,13 @@ export default class Document {
     });
   }
 
-  // Returns a count of how often the given term appears in this document
+  /**
+   * Returns a count of how often the given term appears in this document.
+   * 
+   * @param {string} term
+   * The term of the query.
+   * @returns {number | null}
+   */
   getTermFrequency(term) {
     if (!this._termFrequencies) {
       this._calculateTermFrequencies();
@@ -46,17 +59,29 @@ export default class Document {
     }
   }
 
-  // Returns a string containing the full text of this document (e.g. for display)
+  /**
+   * Returns a string containing the full text of this document (e.g. for display).
+   * 
+   * @returns {string}
+   */
   getText() {
     return this._text;
   }
 
-  // Returns the total number of terms in the document (including stopwords)
+  /**
+   * Returns the total number of terms in the document (including stopwords).
+   * 
+   * @returns {number}
+   */
   getLength() {
     return this._words.length;
   }
 
-  // Returns an array of the unique terms that appear in the document (including stopwords)
+  /**
+   * Returns an array of the unique terms that appear in the document (including stopwords).
+   * 
+   * @returns {string[]}
+   */
   getUniqueTerms() {
     if (!this._termFrequencies) {
       this._calculateTermFrequencies();

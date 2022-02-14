@@ -1,34 +1,51 @@
 import Document from './Document.js';
 import Stopwords from './Stopwords.js';
 
-// Implements TF-IDF (Term Frequency - Inverse Document Frequency) using BM25 weighting, from:
-// https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-356.pdf
-// Calculates term frequencies, term weights, and term vectors, and can return results for a given
-// query. Creates a Document for every text and also manages stopwords for the collection.
+/**
+ * Implements TF-IDF (Term Frequency - Inverse Document Frequency) using BM25 weighting, from:
+ * https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-356.pdf
+ *
+ * Calculates term frequencies, term weights, and term vectors, and can return results for a given
+ * query. Creates a Document for every text and also manages stopwords for the collection.
+ */
 export default class Corpus {
 
-  // - "names" and "texts" are parallel arrays containing the document identifiers and the full
-  //   texts of each document
-  // - "useDefaultStopwords" and "customStopwords" are optional parameters that are passed along to
-  //   the Stopwords instance
-  // - K1 and b are tuning constants from the reference technical report:
-  //   - K1 modifies term frequency (higher values increase the influence)
-  //   - b modifies document length (between 0 and 1; 1 means that long documents are repetitive and
-  //     0 means they are multitopic)
+  /**
+   * @param {string[]} names
+   * An array of document identifiers, having the same number of elements as `texts`.
+   * @param {string[]} texts
+   * An array of document contents, having the same number of elements as `names`.
+   * @param {boolean} [useDefaultStopwords]
+   * Passed on to {@link Stopwords}; whether to use the default stopwords.
+   * @param {string[]} [customStopwords]
+   * Passed on to {@link Stopwords}; an array of custom stopwords to use.
+   * @param {number} [K1]
+   * Modifies term frequency (higher values increase the influence)
+   * @param {number} [b]
+   * Modifies document length (between 0 and 1; 1 means that long documents are repetitive and
+   * 0 means they are multitopic)
+   */
   constructor(names, texts, useDefaultStopwords = true, customStopwords = [], K1 = 2.0, b = 0.75) {
     this._stopwords = new Stopwords(useDefaultStopwords, customStopwords);
     this._K1 = K1;
     this._b = b;
+
+    /** @type {Map<string, Document>} */
     this._documents = new Map();
     for (let i = 0; i < texts.length; i++) {
       this._documents.set(names[i], new Document(texts[i]));
     }
+    /** @type {Map<string, number> | null} */
     this._collectionFrequencies = null;
+    /** @type {Map<string, number> | null} */
     this._collectionFrequencyWeights = null;
+    /** @type {Map<string, Map<string, number>> | null} */
     this._documentVectors = null;
   }
 
-  // Internal method that determines how many documents in the collection contain each term
+  /**
+   * Internal method that determines how many documents in the collection contain each term
+   */
   _calculateCollectionFrequencies() {
     this._collectionFrequencies = new Map();
     for (const document of this._documents.values()) {
@@ -46,7 +63,11 @@ export default class Corpus {
     }
   }
 
-  // Returns an array containing the unique terms used in the corpus (excluding stopwords)
+  /**
+   * Returns an array containing the unique terms used in the corpus (excluding stopwords)
+   * 
+   * @returns {string[]}
+   */
   getTerms() {
     if (!this._collectionFrequencies) {
       this._calculateCollectionFrequencies();
@@ -54,7 +75,13 @@ export default class Corpus {
     return Array.from(this._collectionFrequencies.keys());
   }
 
-  // Returns the number of documents in the collection that contain the given term
+  /**
+   * Returns the number of documents in the collection that contain the given term
+   * 
+   * @param {string} term
+   * The term to query.
+   * @returns {number}
+   */
   getCollectionFrequency(term) {
     if (!this._collectionFrequencies) {
       this._calculateCollectionFrequencies();
@@ -66,34 +93,60 @@ export default class Corpus {
     }
   }
 
-  // Returns the Document corresponding to the given identifier
+  /**
+   * Returns the Document corresponding to the given identifier.
+   * 
+   * @param {string} identifier
+   * The identifier of a document.
+   * @returns {Document | undefined}
+   */
   getDocument(identifier) {
     return this._documents.get(identifier);
   }
 
-  // Returns an array of all identifiers in the corpus
+  /**
+   * Returns an array of all identifiers in the corpus.
+   * 
+   * @returns {string[]}
+   */
   getDocumentIdentifiers() {
     return Array.from(this._documents.keys());
   }
 
-  // Returns an array of the terms that the documents with these two identifiers have in common;
-  // each array entry is a pair of a term and a score, and the array is sorted in descending order
-  // by the score, with a maximum length of "maxTerms" (which is optional and defaults to 10)
+  /**
+   * Returns an array of the terms that the documents with these two identifiers have in common;
+   * each array entry is a pair of a term and a score, and the array is sorted in descending order
+   * by the score, with a maximum length of `maxTerms`.
+   * 
+   * @param {string} identifier1
+   * The first document identifier of the query.
+   * @param {string} identifier2
+   * The second document identifier of the query.
+   * @param {number} [maxTerms]
+   * The maximum number of elements to return; defaults to 10.
+   * @returns {Array<[string, number]>}
+   */
   getCommonTerms(identifier1, identifier2, maxTerms = 10) {
     const vector1 = this.getDocumentVector(identifier1);
     const vector2 = this.getDocumentVector(identifier2);
     const commonTerms = Array.from(vector1.entries())
-      .map(([term, cw]) => [term, cw * vector2.get(term)])
+      .map(
+        /** @type {(arg: [string, number]) => [string, number]} */
+        ([term, cw]) => [term, cw * vector2.get(term)]
+      )
       .filter(d => d[1] > 0);
     return commonTerms.sort((a, b) => b[1] - a[1]).slice(0, maxTerms);
   }
 
-  // Internal method to calculate collection frequency weight (a.k.a. inverse document frequency).
-  // Compared to the formula in the original paper, we add 1 to N (the number of documents in the
-  // collection) so that terms which appear in every document (and are not stopwords) get a very
-  // small CFW instead of zero (and therefore, later, get a very small Combined Weight instead of
-  // zero, meaning that they can still be retrieved by queries and appear in similarity
-  // calculations).
+  /**
+   * Internal method to calculate collection frequency weight (a.k.a. inverse document frequency).
+   * 
+   * Compared to the formula in the original paper, we add 1 to N (the number of documents in the
+   * collection) so that terms which appear in every document (and are not stopwords) get a very
+   * small CFW instead of zero (and therefore, later, get a very small Combined Weight instead of
+   * zero, meaning that they can still be retrieved by queries and appear in similarity
+   * calculations).
+   */
   _calculateCollectionFrequencyWeights() {
     if (!this._collectionFrequencies) {
       this._calculateCollectionFrequencies();
@@ -105,7 +158,13 @@ export default class Corpus {
     }
   }
 
-  // Returns the collection frequency weight (or inverse document frequency) for the given term
+  /**
+   * Returns the collection frequency weight (or inverse document frequency) for the given term.
+   * 
+   * @param {string} term
+   * The term to query.
+   * @returns {number | null}
+   */
   getCollectionFrequencyWeight(term) {
     if (!this._collectionFrequencyWeights) {
       this._calculateCollectionFrequencyWeights();
@@ -117,8 +176,10 @@ export default class Corpus {
     }
   }
 
-  // Internal method that creates, for each document, a Map from each term to its corresponding
-  // combined (TF-IDF) weight for that document
+  /**
+   * Internal method that creates, for each document, a Map from each term to its corresponding
+   * combined (TF-IDF) weight for that document
+   */
   _calculateDocumentVectors() {
     if (!this._collectionFrequencyWeights) {
       this._calculateCollectionFrequencyWeights();
@@ -144,8 +205,14 @@ export default class Corpus {
     }
   }
 
-  // Returns a Map from terms to their corresponding combined (TF-IDF) weights, for the document
-  // with the given identifier
+  /**
+   * Returns a `Map` from terms to their corresponding combined (TF-IDF) weights, for the
+   * document with the given identifier.
+   * 
+   * @param {string} identifier
+   * The identifier of a document.
+   * @returns {Map<string, number> | undefined}
+   */
   getDocumentVector(identifier) {
     if (!this._documentVectors) {
       this._calculateDocumentVectors();
@@ -153,9 +220,17 @@ export default class Corpus {
     return this._documentVectors.get(identifier);
   }
 
-  // Returns an array containing the terms with the highest combined (TF-IDF) weights for the
-  // document with the given identifier; each array entry is a pair of a term and a weight, and
-  // the array is sorted in descending order by the weight, with a maximum length of "maxTerms"
+  /**
+   * Returns an array containing the terms with the highest combined (TF-IDF) weights for the
+   * document with the given identifier; each array entry is a pair of a term and a weight, and
+   * the array is sorted in descending order by the weight, with a maximum length of "maxTerms"
+   * 
+   * @param {string} identifier
+   * The identifier of a document.
+   * @param {number} [maxTerms]
+   * The maximum number of elements to return; defaults to 30.
+   * @returns {Array<[string, number]>}
+   */
   getTopTermsForDocument(identifier, maxTerms = 30) {
     const vector = this.getDocumentVector(identifier);
     if (!vector) return [];
@@ -165,30 +240,43 @@ export default class Corpus {
     return sortedTerms.slice(0, maxTerms);
   }
 
-  // Returns an array representing the highest scoring documents for the given query; each array
-  // entry is a pair of a document identifier and a score, and the array is sorted in descending
-  // order by the score. The score for a document is the total combined weight of each query term
-  // that appears in the document.
+  /**
+   * Returns an array representing the highest scoring documents for the given query; each array
+   * entry is a pair of a document identifier and a score, and the array is sorted in descending
+   * order by the score. The score for a document is the total combined weight of each query term
+   * that appears in the document.
+   * 
+   * @param {string} query
+   * A string containing space-separated terms to query for.
+   * @returns {Array<[string, number]>}
+   */
   getResultsForQuery(query) {
     if (!query || typeof query !== 'string' || query.length === 0) {
       return [];
     }
     const terms = new Document(query).getUniqueTerms();
-    const scores = this.getDocumentIdentifiers().map(d => {
-      const vector = this.getDocumentVector(d);
-      let score = 0.0;
-      terms.forEach(t => {
-        const weight = vector.get(t);
-        if (weight) {
-          score += weight;
-        }
-      });
-      return [d, score];
-    });
+    const scores = this.getDocumentIdentifiers().map(
+      /** @type {(d: string) => [string, number]} */
+      (d) => {
+        const vector = this.getDocumentVector(d);
+        let score = 0.0;
+        terms.forEach(t => {
+          const weight = vector.get(t);
+          if (weight) {
+            score += weight;
+          }
+        });
+        return [d, score];
+      }
+    );
     return scores.filter(d => d[1] > 0).sort((a, b) => b[1] - a[1]);
   }
 
-  // Returns the Stopwords instance that is being used by this corpus (for inspection or debugging)
+  /**
+   * Returns the Stopwords instance that is being used by this corpus (for inspection or debugging).
+   * 
+   * @returns {Stopwords}
+   */
   getStopwords() {
     return this._stopwords;
   }
