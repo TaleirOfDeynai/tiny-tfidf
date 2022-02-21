@@ -25,7 +25,7 @@ tape('Unit tests for Corpus class', function (t) {
 
   t.equal(corpus.getCollectionFrequency('test'), 3);
   t.equal(corpus.getCollectionFrequency('short'), 2);
-  t.equal(corpus.getCollectionFrequency('and'), null); // stopword
+  t.equal(corpus.getCollectionFrequency('and'), 0); // stopword
 
   // 'quite' and 'short' should be the top two common terms for documents 1 & 2, because they
   // appear in both documents and not in document 3
@@ -66,7 +66,7 @@ tape('Unit tests for Document class', function (t) {
 
   t.equal(doc.getTermFrequency('bit'), 2);
   t.equal(doc.getTermFrequency('and'), 1); // stopwords are still present at the document level
-  t.equal(doc.getTermFrequency('a'), null); // too short
+  t.equal(doc.getTermFrequency('a'), 0); // too short
 });
 
 tape('Unit tests for Similarity class', function (t) {

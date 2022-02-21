@@ -46,17 +46,14 @@ export default class Document {
    * 
    * @param {string} term
    * The term of the query.
-   * @returns {number | null}
+   * @returns {number}
    */
   getTermFrequency(term) {
     if (!this._termFrequencies) {
       this._calculateTermFrequencies();
     }
-    if (this._termFrequencies.has(term)) {
-      return this._termFrequencies.get(term);
-    } else {
-      return null;
-    }
+    const tf = this._termFrequencies.get(term);
+    return typeof tf !== 'number' ? 0 : tf;
   }
 
   /**

@@ -85,11 +85,8 @@ export default class Corpus {
     if (!this._collectionFrequencies) {
       this._calculateCollectionFrequencies();
     }
-    if (this._collectionFrequencies.has(term)) {
-      return this._collectionFrequencies.get(term);
-    } else {
-      return null;
-    }
+    const cf = this._collectionFrequencies.get(term);
+    return typeof cf !== 'number' ? 0 : cf;
   }
 
   /**
