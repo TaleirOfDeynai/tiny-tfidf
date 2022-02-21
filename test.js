@@ -1,4 +1,4 @@
-import { Corpus, Similarity, Stopwords } from './index.js';
+import { Corpus, Similarity, Stopwords, defaultStopwords } from './index.js';
 import tape from 'tape';
 
 const corpus = new Corpus(
@@ -7,7 +7,8 @@ const corpus = new Corpus(
     'This is test document number 1. It is quite a short document.',
     'This is test document 2. It is also quite short, and is a test.',
     'Test document number three is a bit different and is also a tiny bit longer.'
-  ]
+  ],
+  defaultStopwords
 );
 
 tape('Unit tests for Corpus class', function (t) {
@@ -82,18 +83,18 @@ tape('Unit tests for Stopwords class', function (t) {
   t.plan(9);
   const customStopwords = ['test', 'words'];
 
-  const defaultPlusCustomStopwords = new Stopwords(true, customStopwords);
-  t.ok(defaultPlusCustomStopwords.includes('test'));
-  t.ok(defaultPlusCustomStopwords.includes('words'));
-  t.ok(defaultPlusCustomStopwords.includes('the'));
+  const customStopwordsOnly = new Stopwords(customStopwords);
+  t.ok(customStopwordsOnly.includes('test'));
+  t.ok(customStopwordsOnly.includes('words'));
+  t.notOk(customStopwordsOnly.includes('the'));
 
-  const emptyStopwords = new Stopwords(false, []);
+  const emptyStopwords = new Stopwords([]);
   t.notOk(emptyStopwords.includes('test'));
   t.notOk(emptyStopwords.includes('words'));
   t.notOk(emptyStopwords.includes('the'));
 
-  const customStopwordsOnly = new Stopwords(false, customStopwords);
-  t.ok(customStopwordsOnly.includes('test'));
-  t.ok(customStopwordsOnly.includes('words'));
-  t.notOk(customStopwordsOnly.includes('the'));
+  const defaultPlusCustomStopwords = defaultStopwords.with(customStopwords);
+  t.ok(defaultPlusCustomStopwords.includes('test'));
+  t.ok(defaultPlusCustomStopwords.includes('words'));
+  t.ok(defaultPlusCustomStopwords.includes('the'));
 });

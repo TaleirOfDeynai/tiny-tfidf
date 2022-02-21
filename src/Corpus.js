@@ -15,18 +15,17 @@ export default class Corpus {
    * An array of document identifiers, having the same number of elements as `texts`.
    * @param {string[]} texts
    * An array of document contents, having the same number of elements as `names`.
-   * @param {boolean} [useDefaultStopwords]
-   * Passed on to {@link Stopwords}; whether to use the default stopwords.
-   * @param {string[]} [customStopwords]
-   * Passed on to {@link Stopwords}; an array of custom stopwords to use.
+   * @param {string[] | Stopwords} [stopwords]
+   * The stopwords to use.  Will initialize empty unless provided.
+   * You must import and provide the `defaultStopwords` if they are wanted.
    * @param {number} [K1]
    * Modifies term frequency (higher values increase the influence)
    * @param {number} [b]
    * Modifies document length (between 0 and 1; 1 means that long documents are repetitive and
    * 0 means they are multitopic)
    */
-  constructor(names, texts, useDefaultStopwords = true, customStopwords = [], K1 = 2.0, b = 0.75) {
-    this._stopwords = new Stopwords(useDefaultStopwords, customStopwords);
+  constructor(names, texts, stopwords, K1 = 2.0, b = 0.75) {
+    this._stopwords = Stopwords.from(stopwords);
     this._K1 = K1;
     this._b = b;
 

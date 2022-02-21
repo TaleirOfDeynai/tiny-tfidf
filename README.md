@@ -16,7 +16,7 @@ I am open to adding either if there's a tiny way to do it!
 Note: I'm still actively developing this code (and documentation), and the API is likely to change/evolve up until version 1.0.
 
 ```js
-import { Corpus } from "tiny-tfidf";
+import { Corpus, defaultStopwords } from "tiny-tfidf";
 
 const corpus = new Corpus(
   ["document1", "document2", "document3"],
@@ -24,7 +24,8 @@ const corpus = new Corpus(
     "This is test document number 1. It is quite a short document.",
     "This is test document 2. It is also quite short, and is a test.",
     "Test document number three is a bit different and is also a tiny bit longer."
-  ]
+  ],
+  defaultStopwords
 );
 
 // print top terms for document 3
@@ -60,7 +61,7 @@ node --experimental-modules --es-module-specifier-resolution=node test.js
 ### `Corpus` class
 
 This is the main class that you will use directly. It takes care of creating a `Document` for every text and also manages `Stopwords` for the collection. It calculates term frequencies, term weights, and term vectors, and can return results for a given query.
-- `constructor(names, texts, useDefaultStopwords = true, customStopwords = [], K1 = 2.0, b = 0.75)`: `names` and `texts` are parallel arrays containing the document identifiers and the full texts of each document; `useDefaultStopwords` and `customStopwords` are optional parameters that are passed along to the `Stopwords` instance (see below); `K1` and `b` are optional tuning parameters for term weighting that are explained in the reference [technical report](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-356.pdf)
+- `constructor(names, texts, stopwords, K1 = 2.0, b = 0.75)`: `names` and `texts` are parallel arrays containing the document identifiers and the full texts of each document; `stopwords` is an optional `Stopwords` instance or array of strings with terms to exclude; `K1` and `b` are optional tuning parameters for term weighting that are explained in the reference [technical report](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-356.pdf)
 - `getTerms()`: returns an array containing the unique terms used in the corpus (excluding stopwords)
 - `getCollectionFrequency(term)`: returns the number of documents in the collection that contain the given term
 - `getDocument(identifier)`: returns the `Document` object for the given `identifier`
@@ -86,10 +87,27 @@ This is used by the `Corpus` class for each of the given texts. It is independen
 The other method, `_calculateTermFrequencies`, is intended for internal use.
 
 ### `Stopwords` class
-
-- `constructor(useDefaultStopwords = true, customStopwords = [])`: `useDefaultStopwords` and `customStopwords` are optional parameters, as specified in the constructor for `Corpus`, which control whether the default stopword list should be used, and to specify any custom stopwords. If the default stopword list is to be used, any custom stopwords are added to that list; if not, the custom stopwords are used instead of the default list.
+A wrapper around an ES6 `Set` that stores stopwords.
+- `constructor(terms = [])`: `terms` is an array containing the terms to use for the list.
+- `static from(stopwordsOrTerms = [])`: converts `stopwordsOrTerms` into an instance of `Stopwords`, only invoking the constructor with the given value when it is not a `Stopwords` instance
+- `with(additionalStopwords)`: creates a new `Stopwords` instance that includes additional stopwords
 - `includes(term)`: returns `true` if the current stopword list contains the given `term`, or `false` otherwise
 - `getStopwordList()`: returns an array of the stopword list currently in use (for inspection or debugging)
+
+A built-in set of stopwords are provided by importing `defaultStopwords`.  You can also add words to it using `with`:
+```js
+import { Corpus, defaultStopwords } from "tiny-tfidf";
+
+const corpus = new Corpus(
+  [/* List of documents identifiers. */],
+  [/* List of document contents. */],
+  defaultStopwords.with([
+    "my", "extra", "stopwords"
+  ])
+);
+```
+
+If you use a different set of stopwords or do not wish to use stopwords, the built-in defaults can be tree-shaken from a client-side deliverable with Webpack or other similar build tool to reduce the size; just avoid importing `defaultStopwords`.
 
 ### `Similarity` class
 
