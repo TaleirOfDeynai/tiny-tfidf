@@ -12,7 +12,7 @@ const corpus = new Corpus(
 );
 
 tape('Unit tests for Corpus class', function (t) {
-  t.plan(17);
+  t.plan(18);
 
   t.equal(corpus.getDocumentIdentifiers().length, 3);
 
@@ -36,6 +36,9 @@ tape('Unit tests for Corpus class', function (t) {
   const testWeight = corpus.getCollectionFrequencyWeight('test');
   const shortWeight = corpus.getCollectionFrequencyWeight('short');
   t.ok(testWeight < shortWeight);
+
+  // 'and', a stopword, can not have a weight
+  t.equal(corpus.getCollectionFrequencyWeight('and'), null);
 
   const topTerms = corpus.getTopTermsForDocument('document3');
   // Terms after stopword filtering: ['test', 'document', 'number', 'three', 'bit', 'different',

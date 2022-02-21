@@ -156,6 +156,7 @@ export default class Corpus {
 
   /**
    * Returns the collection frequency weight (or inverse document frequency) for the given term.
+   * If the term is not found, return `null` explicitly.
    * 
    * @param {string} term
    * The term to query.
@@ -165,11 +166,8 @@ export default class Corpus {
     if (!this._collectionFrequencyWeights) {
       this._calculateCollectionFrequencyWeights();
     }
-    if (this._collectionFrequencyWeights.has(term)) {
-      return this._collectionFrequencyWeights.get(term);
-    } else {
-      return null;
-    }
+    const cfw = this._collectionFrequencyWeights.get(term);
+    return typeof cfw !== 'number' ? null : cfw;
   }
 
   /**
