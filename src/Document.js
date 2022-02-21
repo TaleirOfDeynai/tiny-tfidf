@@ -36,7 +36,7 @@ export default class Document {
    * @returns {Document}
    */
   static from(textOrDocument) {
-    return textOrDocument instanceof Document ? textOrDocument : new Document(textOrDocument);
+    return textOrDocument instanceof Document ? textOrDocument : new this(textOrDocument);
   }
 
   /**

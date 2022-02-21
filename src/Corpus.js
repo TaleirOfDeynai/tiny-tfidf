@@ -75,12 +75,14 @@ export default class Corpus {
       throw new Error('expected `names` to have same length as `texts`');
     }
 
-    /** @returns {Iterable<[string, Document]>} */
+    /** @returns {Iterable<[string, string]>} */
     function* toKvps() {
       for (let i = 0; i < texts.length; i++)
-        yield [names[i], Document.from(texts[i])];
+        yield [names[i], texts[i]];
     }
-    return new Corpus(toKvps(), options);
+    // could be seen as redundant, but this makes it so only `fromKvps` needs to be overridden
+    // to change what kind of `Document` is used
+    return this.fromKvps(toKvps(), options);
   }
 
   /**
@@ -100,7 +102,7 @@ export default class Corpus {
       for (const [id, contents] of documentKvps)
         yield [id, Document.from(contents)];
     }
-    return new Corpus(toKvps(), options);
+    return new this(toKvps(), options);
   }
 
   /**
