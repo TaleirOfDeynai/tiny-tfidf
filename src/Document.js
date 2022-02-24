@@ -28,6 +28,18 @@ export default class Document {
   }
 
   /**
+   * Converts the given value into a {@link Document} instance, only invoking the constructor
+   * when it is not an instance.
+   * 
+   * @param {string | Document} textOrDocument
+   * A {@link Document} instance or a string to build one from.
+   * @returns {Document}
+   */
+  static from(textOrDocument) {
+    return textOrDocument instanceof Document ? textOrDocument : new Document(textOrDocument);
+  }
+
+  /**
    * Internal method to count how often each term appears in this document.
    */
   _calculateTermFrequencies() {

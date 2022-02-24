@@ -2,44 +2,105 @@ import Document from './Document.js';
 import Stopwords from './Stopwords.js';
 
 /**
+ * @typedef CorpusOptions
+ * @prop {string[] | Stopwords} [stopwords]
+ * The stopwords to use.  Will initialize empty unless provided.
+ * You must import and provide the `defaultStopwords` if they are wanted.
+ * @prop {number} [K1]
+ * Modifies term frequency (higher values increase the influence).  Defaults to `2.0`.
+ * @prop {number} [b]
+ * Modifies document length (between 0 and 1; 1 means that long documents are repetitive and
+ * 0 means they are multitopic).  Defaults to `0.75`.
+ */
+
+/**
+ * An object holding our defaults for later composition.
+ * 
+ * @type {Required<CorpusOptions>}
+ */
+const defaultOptions = {
+  stopwords: [],
+  K1: 2.0,
+  b: 0.75
+};
+
+/**
  * Implements TF-IDF (Term Frequency - Inverse Document Frequency) using BM25 weighting, from:
  * https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-356.pdf
  *
  * Calculates term frequencies, term weights, and term vectors, and can return results for a given
  * query. Creates a Document for every text and also manages stopwords for the collection.
+ * 
+ * @template {Document} TDoc
+ * The type of the document, in case {@link Document} was extended.
  */
 export default class Corpus {
 
   /**
-   * @param {string[]} names
-   * An array of document identifiers, having the same number of elements as `texts`.
-   * @param {string[]} texts
-   * An array of document contents, having the same number of elements as `names`.
-   * @param {string[] | Stopwords} [stopwords]
-   * The stopwords to use.  Will initialize empty unless provided.
-   * You must import and provide the `defaultStopwords` if they are wanted.
-   * @param {number} [K1]
-   * Modifies term frequency (higher values increase the influence)
-   * @param {number} [b]
-   * Modifies document length (between 0 and 1; 1 means that long documents are repetitive and
-   * 0 means they are multitopic)
+   * @param {Iterable<[string, TDoc]>} documents
+   * An iterable of key-value-pairs, an identifier to a {@link Document}.
+   * @param {CorpusOptions} [options]
+   * An object to define initialization options.
    */
-  constructor(names, texts, stopwords, K1 = 2.0, b = 0.75) {
-    this._stopwords = Stopwords.from(stopwords);
-    this._K1 = K1;
-    this._b = b;
+  constructor(documents, options) {
+    const config = { ...defaultOptions, ...options };
+    this._stopwords = Stopwords.from(config.stopwords);
+    this._K1 = config.K1;
+    this._b = config.b;
 
-    /** @type {Map<string, Document>} */
-    this._documents = new Map();
-    for (let i = 0; i < texts.length; i++) {
-      this._documents.set(names[i], new Document(texts[i]));
-    }
+    /** @type {Map<string, TDoc>} */
+    this._documents = new Map(documents);
     /** @type {Map<string, number> | null} */
     this._collectionFrequencies = null;
     /** @type {Map<string, number> | null} */
     this._collectionFrequencyWeights = null;
     /** @type {Map<string, Map<string, number>> | null} */
     this._documentVectors = null;
+  }
+
+  /**
+   * Builds a {@link Corpus} from two parallel lists.  This matches the previous constructor
+   * API and is intended to help with migration.
+   * 
+   * @param {string[]} names
+   * An array of document identifiers, having the same number of elements as `texts`.
+   * @param {string[]} texts
+   * An array of document contents, having the same number of elements as `names`.
+   * @param {CorpusOptions} [options]
+   * An object to define initialization options.
+   * @returns {Corpus<Document>}
+   */
+  static from(names, texts, options) {
+    if (names.length !== texts.length) {
+      throw new Error('expected `names` to have same length as `texts`');
+    }
+
+    /** @returns {Iterable<[string, Document]>} */
+    function* toKvps() {
+      for (let i = 0; i < texts.length; i++)
+        yield [names[i], Document.from(texts[i])];
+    }
+    return new Corpus(toKvps(), options);
+  }
+
+  /**
+   * Builds a {@link Corpus} from an iterable of key-value-pairs.  If a value in `documentKvps`
+   * is a string, it will be converted into a {@link Document}.
+   * 
+   * @param {Iterable<[string, string | Document]>} documentKvps
+   * An iterable of key-value-pairs, an identifier to either a {@link Document} or a string that
+   * should be treated as its contents.
+   * @param {CorpusOptions} [options]
+   * An object to define initialization options.
+   * @returns {Corpus<Document>}
+   */
+  static fromKvps(documentKvps, options) {
+    /** @returns {Iterable<[string, Document]>} */
+    function* toKvps() {
+      for (const [id, contents] of documentKvps)
+        yield [id, Document.from(contents)];
+    }
+    return new Corpus(toKvps(), options);
   }
 
   /**
@@ -94,7 +155,7 @@ export default class Corpus {
    * 
    * @param {string} identifier
    * The identifier of a document.
-   * @returns {Document | undefined}
+   * @returns {TDoc | undefined}
    */
   getDocument(identifier) {
     return this._documents.get(identifier);
@@ -289,3 +350,9 @@ export default class Corpus {
     return this._stopwords;
   }
 }
+
+/**
+ * An exported type for a {@link Corpus} of any kind of {@link Document}.
+ * 
+ * @typedef {Corpus<Document>} AnyCorpus
+ */

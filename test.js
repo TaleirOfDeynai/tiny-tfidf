@@ -1,19 +1,43 @@
-import { Corpus, Similarity, Stopwords, defaultStopwords } from './index.js';
+import { Corpus, Document, Similarity, Stopwords, defaultStopwords } from './index.js';
 import tape from 'tape';
 
-const corpus = new Corpus(
-  ['document1', 'document2', 'document3'],
-  [
-    'This is test document number 1. It is quite a short document.',
-    'This is test document 2. It is also quite short, and is a test.',
-    'Test document number three is a bit different and is also a tiny bit longer.'
-  ],
-  defaultStopwords
-);
+const docsByKvp = new Map([
+  ['document1', 'This is test document number 1. It is quite a short document.'],
+  ['document2', 'This is test document 2. It is also quite short, and is a test.'],
+  ['document3', 'Test document number three is a bit different and is also a tiny bit longer.']
+]);
+const commonOptions = { stopwords: defaultStopwords };
+
+tape('Unit tests for Corpus builder methods', function (t) {
+  t.plan(5);
+
+  // from KVPs
+  const goodKvps = () => Corpus.fromKvps(docsByKvp, commonOptions);
+  t.doesNotThrow(goodKvps);
+  t.equal(goodKvps().getDocumentIdentifiers().length, 3);
+
+  // from parallel arrays
+  const goodPairedArrs = () => {
+    const names = [...docsByKvp.keys()];
+    const texts = [...docsByKvp.values()];
+    return Corpus.from(names, texts, commonOptions);
+  };
+  t.doesNotThrow(goodPairedArrs);
+  t.equal(goodPairedArrs().getDocumentIdentifiers().length, 3);
+
+  // an explicit throw when `names.length` is not `texts.length`
+  const badPairedArrs = () => {
+    const names = [...docsByKvp.keys()].slice(1);
+    const texts = [...docsByKvp.values()];
+    return Corpus.from(names, texts, commonOptions);
+  };
+  t.throws(badPairedArrs);
+});
 
 tape('Unit tests for Corpus class', function (t) {
   t.plan(18);
 
+  const corpus = Corpus.fromKvps(docsByKvp, commonOptions);
   t.equal(corpus.getDocumentIdentifiers().length, 3);
 
   const terms = corpus.getTerms();
@@ -58,8 +82,11 @@ tape('Unit tests for Corpus class', function (t) {
 });
 
 tape('Unit tests for Document class', function (t) {
-  t.plan(4);
-  const doc = corpus.getDocument('document3');
+  t.plan(5);
+  const doc = Document.from(docsByKvp.get('document3'));
+
+  // builder should return instance when already `Document`.
+  t.equal(doc, Document.from(doc));
 
   const terms = doc.getUniqueTerms();
   // We have ignored short terms (<2 characters) and stripped numbers, and have not yet applied
@@ -74,7 +101,7 @@ tape('Unit tests for Document class', function (t) {
 
 tape('Unit tests for Similarity class', function (t) {
   t.plan(2);
-  const similarity = new Similarity(corpus);
+  const similarity = new Similarity(Corpus.fromKvps(docsByKvp, commonOptions));
   const distanceMatrix = similarity.getDistanceMatrix();
   t.equal(distanceMatrix.identifiers.length, 3);
   // The first two documents should be more similar to each other (i.e. less distant) than the

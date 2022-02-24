@@ -14,7 +14,7 @@
 export default class Similarity {
 
   /**
-   * @param {import("./Corpus").default} corpus
+   * @param {import("./Corpus").AnyCorpus} corpus
    * Expects an instance of Corpus 
    */
   constructor(corpus) {
