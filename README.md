@@ -82,19 +82,25 @@ The other methods in the class (whose names start with `_calculate`) are intende
 
 ### `Document` class
 
-This is used by the `Corpus` class for each of the given texts. It is independent of any stopword list or term weights (which are managed at the corpus level) and only maintains the document-level term frequencies.
-- `constructor(text)`: expects a single one of the texts originally passed into `Corpus`
-- `static from(textOrDocument)`: converts `textOrDocument` into a `Document` instance, only invoking the constructor with the given value when it is not a `Document` instance
+This is used by the `Corpus` class to maintain the document-level term frequencies for each document; it is independent of any stopword list or term weights (which are managed at the corpus level).
+- `constructor(words)`: expects a list of individual words that represent the document
 - `getTermFrequency(term)`: returns a count of how often the given term appears in this document
-- `getText()`: returns a string containing the full text of this document (e.g. for display)
 - `getLength()`: returns the total number of terms in the document (including stopwords)
 - `getUniqueTerms()`: returns an array of the unique terms that appear in the document (including stopwords)
 
 The other method, `_calculateTermFrequencies`, is intended for internal use.
 
-This default implementation only considers terms that contain only letters or numbers; they are filtered out if they contain only 1 character or if they start with a number.
+You can sub-class `Document` to specialize it. Simply provide instances of the sub-class directly to the `Corpus` constructor if you need a document that has different behavior or additional features.
 
-You can extend this class and provide instances of the sub-class directly to the `Corpus` constructor if you need a document that has different behavior or additional features.
+### `TextDocument` class
+
+This is used by the `Corpus` class as the default for its `from` and `fromKvps` static methods. It takes a basic string and extracts individual words from it.
+- `constructor(text)`: expects a single one of the texts originally passed into `Corpus`
+- `static from(textOrDocument)`: converts `textOrDocument` into a `Document` instance, only invoking the constructor with the given value when it is not a `Document` instance
+- `getText()`: returns a string containing the full text of this document (e.g. for display)
+- ...and all methods of `Document`.
+
+This implementation only considers terms that contain only letters or numbers; they are filtered out if they contain only 1 character or if they start with a number.
 
 ### `Stopwords` class
 A wrapper around an ES6 `Set` that stores stopwords.

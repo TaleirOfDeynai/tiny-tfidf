@@ -1,4 +1,5 @@
 import Document from './Document.js';
+import TextDocument from './TextDocument.js';
 import Stopwords from './Stopwords.js';
 
 /**
@@ -32,7 +33,7 @@ const defaultOptions = {
  * query. Creates a Document for every text and also manages stopwords for the collection.
  * 
  * @template {Document} TDoc
- * The type of the document, in case {@link Document} was extended.
+ * The type of the document.
  */
 export default class Corpus {
 
@@ -68,7 +69,7 @@ export default class Corpus {
    * An array of document contents, having the same number of elements as `names`.
    * @param {CorpusOptions} [options]
    * An object to define initialization options.
-   * @returns {Corpus<Document>}
+   * @returns {AnyCorpus}
    */
   static from(names, texts, options) {
     if (names.length !== texts.length) {
@@ -87,20 +88,20 @@ export default class Corpus {
 
   /**
    * Builds a {@link Corpus} from an iterable of key-value-pairs.  If a value in `documentKvps`
-   * is a string, it will be converted into a {@link Document}.
+   * is a string, it will be converted into a {@link TextDocument}.
    * 
    * @param {Iterable<[string, string | Document]>} documentKvps
    * An iterable of key-value-pairs, an identifier to either a {@link Document} or a string that
    * should be treated as its contents.
    * @param {CorpusOptions} [options]
    * An object to define initialization options.
-   * @returns {Corpus<Document>}
+   * @returns {AnyCorpus}
    */
   static fromKvps(documentKvps, options) {
     /** @returns {Iterable<[string, Document]>} */
     function* toKvps() {
       for (const [id, contents] of documentKvps)
-        yield [id, Document.from(contents)];
+        yield [id, TextDocument.from(contents)];
     }
     return new this(toKvps(), options);
   }
@@ -307,7 +308,7 @@ export default class Corpus {
   _queryToUniqueTerms(query) {
     // This basic implementation only works with string queries.
     if (typeof query === 'string' && query.length > 0) {
-      return new Document(query).getUniqueTerms();
+      return new TextDocument(query).getUniqueTerms();
     }
     return [];
   }

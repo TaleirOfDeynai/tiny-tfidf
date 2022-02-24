@@ -1,42 +1,17 @@
-// This is used by the Corpus class for each of the given texts. It is independent of any stopword
-// list or term weights (which are managed at the corpus level) and only maintains the
-// document-level term frequencies. Terms can contain only letters or numbers; they are filtered
-// out if they contain only 1 character or if they start with a number.
+// A base for all documents, making no assumptions about how the document needs to
+// be interpreted.  As long as you can provide an array of individual words, it will
+// do its job.
 export default class Document {
 
   /**
-   * @param {string} text
-   * Expects a single one of the texts originally passed into Corpus
+   * @param {string[]} words
+   * Expects a list of individual words that represent the document.
    */
-  constructor(text) {
-    this._text = text;
-    this._words = text
-      .match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
-      .filter(word => {
-        // Exclude very short terms and terms that start with a number
-        // (stopwords are dealt with by the Corpus class)
-        if (word.length < 2 || word.match(/^\d/)) {
-          return false;
-        } else {
-          return true;
-        }
-      })
-      .map(word => word.toLowerCase());
+  constructor(words) {
+    this._words = words;
   
     /** @type {Map<string, number>} */
     this._termFrequencies = null;
-  }
-
-  /**
-   * Converts the given value into a {@link Document} instance, only invoking the constructor
-   * when it is not an instance.
-   * 
-   * @param {string | Document} textOrDocument
-   * A {@link Document} instance or a string to build one from.
-   * @returns {Document}
-   */
-  static from(textOrDocument) {
-    return textOrDocument instanceof Document ? textOrDocument : new this(textOrDocument);
   }
 
   /**
@@ -66,15 +41,6 @@ export default class Document {
     }
     const tf = this._termFrequencies.get(term);
     return typeof tf !== 'number' ? 0 : tf;
-  }
-
-  /**
-   * Returns a string containing the full text of this document (e.g. for display).
-   * 
-   * @returns {string}
-   */
-  getText() {
-    return this._text;
   }
 
   /**

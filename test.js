@@ -1,4 +1,4 @@
-import { Corpus, Document, Similarity, Stopwords, defaultStopwords } from './index.js';
+import { Corpus, Document, TextDocument, Similarity, Stopwords, defaultStopwords } from './index.js';
 import tape from 'tape';
 
 const docsByKvp = new Map([
@@ -81,22 +81,24 @@ tape('Unit tests for Corpus class', function (t) {
   t.equal(corpus.getResultsForQuery(2).length, 0);
 });
 
-tape('Unit tests for Document class', function (t) {
-  t.plan(5);
-  const doc = Document.from(docsByKvp.get('document3'));
+tape('Unit tests for TextDocument class', function (t) {
+  t.plan(6);
+  const textDoc = TextDocument.from(docsByKvp.get('document3'));
 
-  // builder should return instance when already `Document`.
-  t.equal(doc, Document.from(doc));
+  // builder should return instance when already a `Document`.
+  const baseDoc = new Document(['the', 'quick', 'brown', 'fox']);
+  t.equal(baseDoc, TextDocument.from(baseDoc));
+  t.equal(textDoc, TextDocument.from(textDoc));
 
-  const terms = doc.getUniqueTerms();
+  const terms = textDoc.getUniqueTerms();
   // We have ignored short terms (<2 characters) and stripped numbers, and have not yet applied
   // stopword filtering. So unique terms are ['test', 'document', 'number', 'three', 'is', 'bit',
   // 'different', 'and', 'also', 'tiny', 'longer']
   t.equal(terms.length, 11);
 
-  t.equal(doc.getTermFrequency('bit'), 2);
-  t.equal(doc.getTermFrequency('and'), 1); // stopwords are still present at the document level
-  t.equal(doc.getTermFrequency('a'), 0); // too short
+  t.equal(textDoc.getTermFrequency('bit'), 2);
+  t.equal(textDoc.getTermFrequency('and'), 1); // stopwords are still present at the document level
+  t.equal(textDoc.getTermFrequency('a'), 0); // too short
 });
 
 tape('Unit tests for Similarity class', function (t) {
