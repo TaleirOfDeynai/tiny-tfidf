@@ -240,6 +240,21 @@ export default class Corpus {
   }
 
   /**
+   * Internal method to convert a query into a list of unique terms.
+   * 
+   * @param {any} query
+   * Something that represents a query.
+   * @returns {string[]}
+   */
+  _queryToUniqueTerms(query) {
+    // This basic implementation only works with string queries.
+    if (typeof query === 'string' && query.length > 0) {
+      return new Document(query).getUniqueTerms();
+    }
+    return [];
+  }
+
+  /**
    * Returns an array representing the highest scoring documents for the given query; each array
    * entry is a pair of a document identifier and a score, and the array is sorted in descending
    * order by the score. The score for a document is the total combined weight of each query term
@@ -250,10 +265,9 @@ export default class Corpus {
    * @returns {Array<[string, number]>}
    */
   getResultsForQuery(query) {
-    if (!query || typeof query !== 'string' || query.length === 0) {
-      return [];
-    }
-    const terms = new Document(query).getUniqueTerms();
+    const terms = this._queryToUniqueTerms(query);
+    if (terms.length === 0) return [];
+
     const scores = this.getDocumentIdentifiers().map(
       /** @type {(d: string) => [string, number]} */
       (d) => {
